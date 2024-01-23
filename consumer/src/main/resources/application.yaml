@@ -1,0 +1,15 @@
+server:
+  port: "8081"
+rabbitmq:
+  exchange: ${EXCHANGE_NAME:log}
+  queue: ${QUEUE_NAME:log-queue}
+spring:
+  datasource:
+    url: ${DATASOURCE_HOST:jdbc:postgresql://localhost:5432/logs-db}
+    username: ${DATASOURCE_USER:admin}
+    password: ${DATASOURCE_PASSWORD:admin}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}

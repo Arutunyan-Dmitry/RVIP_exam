@@ -1,0 +1,76 @@
+version: '3'
+
+networks:
+  mynetwork:
+    driver: bridge
+
+
+services:
+  logs-db:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: admin
+      POSTGRES_DB: logs-db
+    volumes:
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql
+    restart: always
+    networks:
+      - mynetwork
+    
+  rabbitmq:
+    image: rabbitmq:latest
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - mynetwork
+
+  publisher:
+    build:
+      context: .
+      dockerfile: ./publisher/Dockerfile
+    ports:
+      - 8080:8080
+    environment:
+      DATASOURCE_HOST: jdbc:postgresql://logs-db:5432/logs-db
+      DATASOURCE_USER: admin
+      DATASOURCE_PASSWORD: admin
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      EXCHANGE_NAME: log
+    restart: always
+    depends_on:
+      - logs-db
+      - rabbitmq
+    networks:
+      - mynetwork
+
+  consumer:
+    build:
+      context: .
+      dockerfile: ./consumer/Dockerfile
+    ports:
+      - 8081:8081
+    environment:
+      DATASOURCE_HOST: jdbc:postgresql://logs-db:5432/logs-db
+      DATASOURCE_USER: admin
+      DATASOURCE_PASSWORD: admin
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      EXCHANGE_NAME: log
+      QUEUE_NAME: log-queue
+    restart: always
+    depends_on:
+      - publisher
+    networks:
+      - mynetwork
